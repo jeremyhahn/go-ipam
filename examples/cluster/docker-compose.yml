@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  ipam-node1:
+    build:
+      context: ../..
+      dockerfile: examples/cluster/Dockerfile
+    container_name: ipam-node1
+    hostname: ipam-node1
+    environment:
+      - NODE_ID=1
+      - CLUSTER_ID=1
+      - RAFT_ADDR=ipam-node1:5000
+      - API_ADDR=0.0.0.0:8080
+      - INITIAL_MEMBERS=1:ipam-node1:5000,2:ipam-node2:5000,3:ipam-node3:5000
+    ports:
+      - "8081:8080"  # API port
+      - "5001:5000"  # Raft port
+    volumes:
+      - ipam-node1-data:/data
+    networks:
+      - ipam-cluster
+    command: >
+      sh -c "
+        ipam cluster init \
+          --node-id 1 \
+          --cluster-id 1 \
+          --raft-addr ipam-node1:5000 \
+          --data-dir /data \
+          --initial-members '1:ipam-node1:5000,2:ipam-node2:5000,3:ipam-node3:5000' &&
+        ipam server --cluster --config /data/cluster.json --port 8080
+      "
+
+  ipam-node2:
+    build:
+      context: ../..
+      dockerfile: examples/cluster/Dockerfile
+    container_name: ipam-node2
+    hostname: ipam-node2
+    environment:
+      - NODE_ID=2
+      - CLUSTER_ID=1
+      - RAFT_ADDR=ipam-node2:5000
+      - API_ADDR=0.0.0.0:8080
+      - INITIAL_MEMBERS=1:ipam-node1:5000,2:ipam-node2:5000,3:ipam-node3:5000
+    ports:
+      - "8082:8080"  # API port
+      - "5002:5000"  # Raft port
+    volumes:
+      - ipam-node2-data:/data
+    networks:
+      - ipam-cluster
+    depends_on:
+      - ipam-node1
+    command: >
+      sh -c "
+        sleep 5 &&
+        ipam cluster join \
+          --node-id 2 \
+          --cluster-id 1 \
+          --raft-addr ipam-node2:5000 \
+          --data-dir /data \
+          --initial-members '1:ipam-node1:5000,2:ipam-node2:5000,3:ipam-node3:5000' &&
+        ipam server --cluster --config /data/cluster.json --port 8080
+      "
+
+  ipam-node3:
+    build:
+      context: ../..
+      dockerfile: examples/cluster/Dockerfile
+    container_name: ipam-node3
+    hostname: ipam-node3
+    environment:
+      - NODE_ID=3
+      - CLUSTER_ID=1
+      - RAFT_ADDR=ipam-node3:5000
+      - API_ADDR=0.0.0.0:8080
+      - INITIAL_MEMBERS=1:ipam-node1:5000,2:ipam-node2:5000,3:ipam-node3:5000
+    ports:
+      - "8083:8080"  # API port
+      - "5003:5000"  # Raft port
+    volumes:
+      - ipam-node3-data:/data
+    networks:
+      - ipam-cluster
+    depends_on:
+      - ipam-node1
+    command: >
+      sh -c "
+        sleep 10 &&
+        ipam cluster join \
+          --node-id 3 \
+          --cluster-id 1 \
+          --raft-addr ipam-node3:5000 \
+          --data-dir /data \
+          --initial-members '1:ipam-node1:5000,2:ipam-node2:5000,3:ipam-node3:5000' &&
+        ipam server --cluster --config /data/cluster.json --port 8080
+      "
+
+  # Load balancer for the cluster
+  nginx:
+    image: nginx:alpine
+    container_name: ipam-lb
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - ipam-cluster
+    depends_on:
+      - ipam-node1
+      - ipam-node2
+      - ipam-node3
+
+volumes:
+  ipam-node1-data:
+  ipam-node2-data:
+  ipam-node3-data:
+
+networks:
+  ipam-cluster:
+    driver: bridge

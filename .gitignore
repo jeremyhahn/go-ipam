@@ -1,0 +1,65 @@
+# Binaries
+ipam
+go-ipam
+ipam-*
+go-ipam-*
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Database files
+*.db
+ipam-data/
+*-data/
+*.pebble/
+
+# Log files
+*.log
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Build artifacts
+dist/
+build/
+
+# Cluster configuration (may contain sensitive data)
+cluster-config-*/
+*-cluster/
+
+# Performance test outputs
+performance-*.md
+benchmark-*.txt
+
+# Backup files
+*.bak
+*.backup
